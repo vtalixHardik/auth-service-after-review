@@ -1,0 +1,12 @@
+set up server
+set up routes
+set up controllers(logic)
+set up models (done)
+create signup -> create a database -> create a collection-> create a document(Users, doctor, patient) -> create a field -> make connection to database -> data catching through APi -> data validation -> CREATE operation
+create login -> make connection to database -> specify different strategies
+set up middlewares
+
+mongodb://localhost:27017
+
+singhhardik
+PbrFN1WgPXvNc1g2
