@@ -1,8 +1,8 @@
-# API Documentation for Slots-management
+# API Documentation for Auth Service
 
 =====================================
 
-### Slots Management API
+### Auth service API
 
 #### Table of Contents
 
