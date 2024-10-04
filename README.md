@@ -35,7 +35,7 @@
 1. Clone the repository
 
 ```bash
-git clone -b slot-service/before-tests https://github.com/vtalix/slot-service.git
+git clone -b auth-service-after-review [https://github.com/vtalixHardik/auth-service-after-review.git]
 ```
 
 2. Install the dependencies
