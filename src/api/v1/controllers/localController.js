@@ -32,19 +32,30 @@ written below CONTROLLERS
 //this controller will handle if we have to send an email or SMS and verify them.
 // getEmailOrPhone
 const sendOTP = expressAsyncHandler(async (req, res) => {
-    if (req.user) {
-      res.status(400);
-      throw new Error("User already logged in");
-    }
-    const { email, phone } = req.body;
-  
-    try {
-      // validate req.body
-      // checking if email or phone exist
-      let user = await User.findOne({
-        $or: [{ email: email }, { phone: phone }],
-      });
-      // console.log("User is ", user);
+  if (req.user) {
+    res.status(400);
+    throw new Error("User already logged in");
+  }
+  const { email, phone } = req.body;
+
+  try {
+    // validate req.body
+    // checking if email or phone exist
+    
+
+    const otp = crypto.randomInt(100000, 999999);
+
+    if (email) {
+      if (
+        !email.includes("@") ||
+        !emailRegex.test(email) ||
+        !validator.isEmail(email)
+      ) {
+        res.status(400);
+
+        throw new Error("Enter valid email");
+      }
+      let user = await User.findOne({ email: email });
   
       // if user already exists
       if (user) {
@@ -52,66 +63,62 @@ const sendOTP = expressAsyncHandler(async (req, res) => {
   
         throw new Error("User Already exist please Log in");
       }
+
+      // add `otp` in OTP table
+      await OTP.create({
+        email,
+        otp,
+      });
+
+      // send OTP through email
+      const options = {
+        email: email,
+        subject: `OTP for verfication`,
+        message: `Your OTP is ${otp}`,
+      };
+      sendEmail(options, res);
+    }
+
+    if (phone) {
+      let user = await User.findOne({ phone: phone });
   
-      const otp = crypto.randomInt(100000, 999999);
+      // if user already exists
+      if (user) {
+        res.status(400);
   
-      if (email) {
-        if (
-          !email.includes("@") ||
-          !emailRegex.test(email) ||
-          !validator.isEmail(email)
-        ) {
-          res.status(400);
-  
-          throw new Error("Enter valid email");
-        }
-  
-        // add `otp` in OTP table
-        user = await OTP.create({
-          email,
-          otp,
-        });
-  
-        // send OTP through email
-        const options = {
-          email: email,
-          subject: `OTP for verfication`,
-          message: `Your OTP is ${otp}`,
-        };
-        sendEmail(options, res);
+        throw new Error("User Already exist please Log in");
       }
-  
-      if (phone) {
-        // add `otp` in OTP table
-        user = await OTP.create({
-          phone,
-          otp,
-        });
-        // send OTP through message
-        console.log(typeof otp);
-        const options = {
-          phone: phone,
-          otp: otp,
-        };
-        sendSMS(options, res);
-      }
-  
-      // maybe create OTP after sending SMS or mail to reduce service size?
-      /* 
-      user = await OTP.create({
+      // add `otp` in OTP table
+      await OTP.create({
+        phone,
+        otp,
+      });
+      // send OTP through message
+      const options = {
+        phone: phone,
+        otp: otp,
+      };
+      sendSMS(options, res);
+    }
+
+    // res.status(200)
+
+    // maybe create OTP after sending SMS or mail to reduce service size?
+    /* 
+      await OTP.create({
           phone,
           email,
           otp,
           verified: false
         }); 
       */
-    } catch (err) {
-      res.status(400);
-  
-      throw new Error(err ? err.message : "Something went wrong");
-    }
-  });
-  
+  } catch (err) {
+    res.status(400);
+
+    throw new Error(err ? err.message : "Something went wrong");
+  }
+});
+
 // this controller verifies OTP
 //   getOtp
 const validateOTP = expressAsyncHandler(async (req, res) => {
@@ -263,7 +270,6 @@ const createUser = expressAsyncHandler(async (req, res) => {
     }
     const entry = await OTP.findOne({ email: email });
     // edge case, user tries to register without verifying OTP
-    console.log("entry is ", entry);
 
     if (!entry || !entry.verified) {
       res.status(400);
@@ -314,7 +320,6 @@ const createUser = expressAsyncHandler(async (req, res) => {
   }
 });
 
-
 // SSO
 //this controller will handle if we have to send an email or SMS and verify them for guest that do not want to register.
 // getEmailOrPhoneSSO
@@ -328,11 +333,11 @@ const sendGuestOTP = expressAsyncHandler(async (req, res) => {
 
   try {
     // checking if email exist in Guest
-    let user = await Guest.findOne({
+    let guest = await Guest.findOne({
       email: req?.body?.email,
     });
 
-    if (!user) {
+    if (!guest) {
       // if user already exists
       res.status(400);
 
@@ -343,7 +348,7 @@ const sendGuestOTP = expressAsyncHandler(async (req, res) => {
 
     if (email) {
       // add `otp` in OTP table
-      user = await OTP.create({
+      await OTP.create({
         email,
         otp,
       });
@@ -416,63 +421,67 @@ const validateGuestOTP = expressAsyncHandler(async (req, res) => {
 // This controller handles login based on email or phone and password provided
 // findAndAuthUser
 const login = expressAsyncHandler(async (req, res) => {
-    if (req.user) {
+  if (req.user) {
+    res.status(400);
+
+    throw new Error("User already logged in");
+  }
+  const { email, phone, password } = req.body;
+  try {
+    if (!password) {
       res.status(400);
-  
-      throw new Error("User already logged in");
+
+      throw new Error("Please Enter your Password");
     }
-    const { email, phone, password } = req.body;
-    try {
-      if (!password) {
-        res.status(400);
-  
-        throw new Error("Please Enter your Password");
-      }
-  
-      if (!email && !phone) {
-        res.status(400);
-  
-        throw new Error("Please fill all the required fields");
-      }
-  
-      // edge case, check if user already logged in, by token?
-      const token = req.headers.authorization;
-      if (token) {
-        res.status(400);
-  
-        throw new Error("User already Logged In");
-      }
-      //check if the username is already registered or not
-      let user = await User.findOne({
-        $or: [{ email: email }, { phone: phone }, {accountStatus: "inactive"}, {accountStatus: "banned"}]
+
+    if (!email && !phone) {
+      res.status(400);
+
+      throw new Error("Please fill all the required fields");
+    }
+
+    // edge case, check if user already logged in, by token?
+    const token = req.headers.authorization;
+    if (token) {
+      res.status(400);
+
+      throw new Error("User already Logged In");
+    }
+    //check if the username is already registered or not
+    let user = await User.findOne({
+      $or: [
+        { email: email },
+        { phone: phone },
+        { accountStatus: "inactive" },
+        { accountStatus: "banned" },
+      ],
+    });
+
+    if (!user) {
+      res.status(400);
+      throw new Error("User Not Found or Suspended, might not be registered");
+    }
+
+    if (user && (await user.isPasswordMatched(password))) {
+
+      // generate and pass token
+      const token = generateToken(user._id);
+      return res.status(200).json({
+        message: "Login Confirmed",
+        success: true,
+        token: token,
       });
-  
-      if (!user) {
-        res.status(400);
-        throw new Error("User Not Found or Suspended, might not be registered");
-      }
-  
-      if (user && (await user.isPasswordMatched(password))) {
-        console.log("Generating token");
-  
-        // generate and pass token
-        const token = generateToken(user._id);
-        return res.status(200).json({
-          message: "Login Confirmed",
-          success: true,
-          token: token,
-        });
-      } else {
-        res.status(400);
-  
-        throw new Error("Invalid Credentials");
-      }
-    } catch (err) {
+    } else {
       res.status(400);
-  
-      throw new Error(err ? err.message : "Something went wrong");
+
+      throw new Error("Invalid Credentials");
     }
-  });
+  } catch (err) {
+    res.status(400);
+
+    throw new Error(err ? err.message : "Something went wrong");
+  }
+});
 
 // You don't handle logout from backend in Microservices
 
@@ -482,5 +491,5 @@ module.exports = {
   createUser,
   login,
   sendGuestOTP,
-  validateGuestOTP
+  validateGuestOTP,
 };

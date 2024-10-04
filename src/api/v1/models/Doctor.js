@@ -1,134 +1,152 @@
 const mongoose = require("mongoose");
+ 
 const DoctorSchema = new mongoose.Schema({
-    id :{
-        type:mongoose.Schema.Types.ObjectId,
+    _id:{
+        type: mongoose.Schema.Types.ObjectId,
         ref:"User",
-        required: true,
-        unique: true
+        require:true
     },
-    mainSpecialization:{
+    main_specialization:{
         type:String,
-        required:true
+        require:[true, "main specialization is needed for creating the profile"]
+    },
+    //this will be used as tags in the frontend.
+    expertise:{
+        type:[String],
+        default:[],
+        require:[true, "please select at least 5 expertise"]
     },
     experience:{
         type:Number,
-        required:true
+        require:[true, "please enter the experience in years"]
     },
-    specialization: [{
-        type:String,
-        required:true
+    education:[{
+        degree:{
+            type:String,
+            require:true
+        },
+        university:{
+            type:String,
+            require:true
+        },
+        year:{
+            type:Number,
+            require:true
+        },
+        file_url:{
+            type:String,
+            require:true
+        }
     }],
-    education:{
-        type: [{
-            coupon_name :{
-                // type: mongoose.Schema.Types.ObjectId,
-                // ref: "Coupon"
-            },
-
-            // set the expiry to 30 days after it is entered
-            expriesOn:{
-                type:Date
-            }
-        }],
-        required:true
-    },
-    clinicAddress:{
-        type: String,
-    },
-    registrationNumber:{
+    clinic_address_complete:{
         type:String,
-        required:true
+        require:[true,  "please enter the complete address of the clinic"],
+ 
     },
-    registrationCouncil:{
+    clinic_phone:{
         type:String,
-        required:true
+        require:[true,  "please enter the phone number of the clinic"],
+ 
     },
-    registrationYear:{
+    registration_number:{
+        type:String,
+        require:[true, "please enter the registration/license number"],
+ 
+    },
+    registration_council:{
+        type:String,
+        require:[true, "council name is needed for creating the profile"]
+    },
+    registration_year:{
         type:Number,
-        required:true
+        require:[true, "Please provide the registration year"]
     },
-    identityProof:{//what should be the json inside
-        type: [{
-            documentType: {
-                // type: mongoose.Schema.Types.ObjectId,
-                // ref: "Coupon"
-            },
-
-            // set the expiry to 30 days after it is entered
-            documentFile: {
-                type:Date
-            }
-        }],
-        required:true
+    identity_proof:{
+        file_type:{
+            type:String,
+            require:true
+        },
+        file_url:{
+            type:String,
+            require:true
+        },
     },
-    profileQuestions:[{
-        type:String,
-        trim: true
+    isApproved:{
+        type:Boolean,
+        default:false,
+    },
+    profile_questions:[{
+        question_number:{
+            type:Number,
+        },
+        answer:{
+            type:String,
+        },
     }],
-    patientsHandled: {
+    total_patients_handled:{
+        type:Number,
+        default:0
+    },
+    total_earnings:{
+        type:Number,
+        default:0
+    },
+    price:{
+        type:Number,
+        default:0
+    },
+    discount_on_3_appointments:{
         type: Number,
-        default : 0,
-        required:true,
-        trim: true
+        default: 5
     },
-    isApproved: {
-        type: Boolean,
-        default: false,
-        required:true,
-        trim: true
-    },
-    price: {
+    discount_on_5_appointments:{
         type: Number,
-        required:true,
-        trim: true
+        default: 8
     },
-    discountOn3Sessions: {
-        type: Number,
-        trim: true
+    total_appointments:{
+        type:Number,
+        default:0
     },
-    discountOn5Sessions: {
-        type: Number,
-        trim: true
+    total_rescheduled_appointments:{
+        type:Number,
+        default:0
     },
-    totalEarnings :{
-        type: Number,
-        defrault: 0,
-        required:true,
-        trim: true
+    total_appointments_cancelled:{
+        type:Number,
+        default:0
     },
-    bilingCalendar: {
-        type: String
+    total_appointments_completed:{
+        type:Number,
+        default:0
     },
-    balance :{
-        type: Number,
-        trim: true
+    total_rescheduled_fee:{
+        type:Number,
+        default: 0,
     },
-    rescheduleFee :{
-        type: Number,
-        trim: true
+    total_refund_sum:{
+        type:Number,
+        default:0
     },
-    totalRescheduleAppointment :{
-        type: Number,
-        trim: true
+    rating:{
+        type:Number,
+        default:0
     },
-    reschedulePenaltiesSum :{
-        type: Number,
-        trim: true
-    },
-    refundAmountSum :{
-        type: Number,
-        trim: true
-    },
-    rating :{
-        type: Number,
-        trim: true
-    },
-    reviews :[{
-        type: Number,
-        trim: true
-    }],
-}, {
-    timestamps: true// created_At, and uopdated_At
+    reviews: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Review'
+        }
+    ],
+ 
+},{
+    timestamps:true
 });
-
-module.exports = mongoose.model("Doctor", DoctorSchema);
+ 
+DoctorSchema.index({ id: 1 });  // Index for doctor by user ID
+DoctorSchema.index({ main_specialization: 1 });  // Search by specialization
+DoctorSchema.index({ isApproved: 1 });  // To quickly find approved or unapproved doctors
+DoctorSchema.index({ total_appointments_completed: -1 });  // Sort doctors by completed appointments
+DoctorSchema.index({ rating: -1 });  // Sort by doctor ratings
+DoctorSchema.index({ expertise: 1 });  // Indexing expertise for faster queries
+ 
+module.exports = mongoose.model("Doctor",  DoctorSchema);

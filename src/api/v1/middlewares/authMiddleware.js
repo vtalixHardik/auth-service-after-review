@@ -15,7 +15,7 @@ module.exports.authMiddleware = expressAsyncHandler(async (req, res, next) => {
         next();
       }
     } catch (err) {
-      console.log("session expired ", err);
+
       throw new Error("Session expired, Please login again");
     }
   } else {

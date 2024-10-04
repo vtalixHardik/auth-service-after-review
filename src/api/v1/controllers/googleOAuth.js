@@ -39,7 +39,6 @@ passport.use(
       try {
         // check if user already exist
         let user = await User.findOne({ google_id: profile.id });
-        // console.log(typeof(user.google_id));
 
         // Not getting hit even after user is there
         if (user) {
@@ -90,7 +89,6 @@ router.get(
     res.status(200).json({
       token: token,
     });
-    // res.redirect("/success");
   }
 );
 

@@ -61,6 +61,10 @@ const forgotPassword = expressAsyncHandler(async (req, res) => {
       };
       sendSMS(options, res);
     }
+    res.status(200).json({
+      success: true,
+      message: "Email or SMS sent"
+    })
   } catch (err) {
     res.status(400);
 
@@ -74,13 +78,10 @@ const resetPassword = expressAsyncHandler(async (req, res) => {
   const confirmPassword = req.body.confirmPassword;
   const token = req.params.token;
 
-  console.log("token is ", token);
-  console.log("here");
   const hashedToken = await crypto
     .createHash("sha256")
     .update(token)
     .digest("hex"); // not running
-  console.log("now here");
 
   const user = await User.findOne({
     resetPasswordToken: hashedToken,
